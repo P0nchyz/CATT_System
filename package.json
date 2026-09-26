@@ -1,0 +1,30 @@
+{
+  "name": "CATT_System",
+  "private": true,
+  "packageManager": "pnpm@12.4.2",
+  "engines": { "node": ">=24 <25" },
+  "devEngines": {
+    "runtime": { "name": "node", "version": "~24", "onFail": "error" }
+  },
+  "scripts": {
+    "dev:backend": "pnpm --filter @CATT_System/backend start:api",
+    "dev:worker": "pnpm --filter @CATT_System/backend start:worker",
+    "dev:web": "pnpm --filter @CATT_System/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "format": "prettier --check \"**/*.{ts,tsx,vue,js,mjs,json,md,yml,yaml}\"",
+    "infra:up": "docker compose -f infra/docker-compose.yml up -d postgres seaweedfs",
+    "infra:down": "docker compose -f infra/docker-compose.yml down",
+    "infra:reset": "docker compose -f infra/docker-compose.yml down -v",
+    "stack:up": "docker compose -f infra/docker-compose.yml up --build",
+    "db:migrate": "pnpm --filter @CATT_System/backend exec prisma migrate dev",
+    "db:generate": "pnpm --filter @CATT_System/backend exec prisma generate",
+    "db:studio": "pnpm --filter @CATT_System/backend exec prisma studio",
+    "db:seed": "pnpm --filter @CATT_System/backend exec prisma db seed"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.8"
+  }
+}

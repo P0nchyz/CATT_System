@@ -1,0 +1,14 @@
+{
+  "name": "@CATT_System/config",
+  "version": "0.0.0",
+  "private": true,
+  "files": ["eslint", "tsconfig"],
+  "dependencies": {
+    "@eslint/js": "^10.0.1",
+    "typescript-eslint": "^8.70.1",
+    "eslint-plugin-boundaries": "^7.2.0",
+    "eslint-plugin-vue": "^10.11.0",
+    "vue-eslint-parser": "^10.4.1",
+    "globals": "^17.12.0"
+  }
+}
