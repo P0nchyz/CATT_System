@@ -1,2 +1,1 @@
-import base from "@pms/config/eslint/base.mjs";
-export default base;
+export { default } from "@CATT_System/config/eslint/base.mjs";

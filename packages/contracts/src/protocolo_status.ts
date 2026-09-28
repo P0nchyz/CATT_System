@@ -7,7 +7,7 @@ export const PROTOCOLO_STATUSES = [
   "dictamen_emitido",
   "ronda_2_enviado",
   "ronda_2_aprovado",
-  "ronda_2_rechazado"
+  "ronda_2_rechazado",
 ] as const;
 export type ProtocoloStatus = (typeof PROTOCOLO_STATUSES)[number];
 

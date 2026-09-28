@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// connect-pg-simple
+model Session {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
+  @@map("session")
+}
+
+// @socket.io/postgres-adapter
+model SocketIOAttachment {
+  id        BigInt   @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  payload   Bytes
+
+  @@map("socket_io_attachment")
+}
+
+model AltchaUsedChallenge {
+  signature String   @id
+  expiresAt DateTime @map("expires_at")
+
+  @@index([expiresAt])
+  @@map("altcha_used_challenge")
+}
+
+model ProcessedJob {
+  jobId       String   @id @map("job_id")
+  queue       String
+  processedAt DateTime @default(now()) @map("processed_at")
+
+  @@map("processed_jobs")
+}
+
+// --- Provisional ---
+
+model Account {
+  id          String   @id @default(uuid())
+  username    String   @unique
+  email       String   @unique
+  displayName String   @map("display_name")
+  role        String
+  status      String   @default("pending_review")
+  mfaSecret   String?  @map("mfa_secret")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  @@map("accounts")
+}
+
+model AuditLog {
+  seq          BigInt   @id @default(autoincrement())
+  actorId      String   @map("actor_id")
+  action       String
+  entityType   String   @map("entity_type")
+  entityId     String   @map("entity_id")
+  metadata     Json?
+  previousHash String?  @map("previous_hash")
+  hash         String   @unique
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@map("audit_log")
+}

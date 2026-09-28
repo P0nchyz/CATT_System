@@ -11,3 +11,6 @@ allowBuilds:
   "@prisma/engine": true
   prisma: true
   "nestjs/core": false
+  "@prisma/engines": true
+  "@scarf/scarf": false
+  unrs-resolver: false

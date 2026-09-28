@@ -2,9 +2,10 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import globals from "globals";
 
-export default tseslint.config(
-  { ignores: ["dist/**", ".output/**", ".nuxt/**", "coverage/**", "generated/**"] },
+export default [
+  { ignores: ["dist/**", ".output/**", ".nuxt/**", "coverage/**", "src/generated/**"] },
   js.configs.recommended,
+  ...tseslint.configs.recommended,
   {
     languageOptions: { globals: { ...globals.node } },
     rules: {
@@ -12,4 +13,4 @@ export default tseslint.config(
       "@typescript-eslint/consistent-type-imports": "error",
     },
   },
-);
+];
