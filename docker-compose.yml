@@ -1,0 +1,57 @@
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql://CATT_System:CATT_System_dev@postgres:5432/CATT_System
+  S3_ENDPOINT: http://seaweedfs:8333 # Stays local
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      - POSTGRES_USER=CATT_System
+      - POSTGRES_PASSWORD=CATT_System_dev
+      - POSTGRES_DB=CATT_System
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U CATT_System"]
+      interval: 5s
+      retries: 5
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.40
+    command: mini -dir=/data/
+    environment:
+      - AWS_ACCESS_KEY_ID=CATT_System
+      - AWS_SECRET_ACCESS_KEY=CATT_System_dev_secret
+      - S3_BUCKET=CATT_System_files
+    ports: ["8333:8333"]
+    volumes: ["seaweedfs-data:/data"]
+
+  api:
+    build:
+      context: .
+      target: api
+    env_file: .env
+    environment: *backend-env
+    depends_on: { postgres: { condition: service_healthy }, seaweedfs: { condition: service_started } }
+    ports: ["3000:3000"]
+
+  worker:
+    build:
+      context: .
+      target: worker
+    env_file: .env
+    environment: *backend-env
+    depends_on: { postgres: { condition: service_healthy } }
+
+  web:
+    build:
+      context: .
+      target: web
+    environment: { NUXT_API_INTERNAL_BASE: http://api:3000 }
+    ports: ["3001:3000"]
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
+  seaweedfs-data:

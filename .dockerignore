@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/.output
+**/.nuxt
+**/.env
+**/*.log
+**/coverage
+.git
+.github
+infra/seaweedfs/s3.json
