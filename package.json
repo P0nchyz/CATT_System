@@ -16,6 +16,8 @@
     "dev:api": "pnpm --filter @CATT_System/backend start:api",
     "dev:worker": "pnpm --filter @CATT_System/backend start:worker",
     "dev:web": "pnpm --filter @CATT_System/web dev",
+    "nest": "pnpm --filter @CATT_System/backend exec nest",
+    "hc": "pnpm --filter @CATT_System/backend exec node dist/cli/hc.js",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
@@ -27,8 +29,7 @@
     "infra:reset": "docker compose down -v",
     "db:generate": "pnpm --filter @CATT_System/backend exec prisma generate",
     "db:migrate": "pnpm --filter @CATT_System/backend exec prisma migrate dev",
-    "db:studio": "pnpm --filter @CATT_System/backend exec prisma studio",
-    "db:seed": "pnpm --filter @CATT_System/backend exec prisma db seed"
+    "db:studio": "pnpm --filter @CATT_System/backend exec prisma studio"
   },
   "devDependencies": {
     "prettier": "^3.9.8"

@@ -10,7 +10,6 @@ export default [
     languageOptions: { globals: { ...globals.node } },
     rules: {
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-      "@typescript-eslint/consistent-type-imports": "error",
     },
   },
 ];
