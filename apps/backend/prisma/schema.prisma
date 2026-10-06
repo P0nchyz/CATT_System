@@ -50,18 +50,131 @@ model ProcessedJob {
 
 // --- Provisional ---
 
-model Account {
-  id          String   @id @default(uuid())
-  username    String   @unique
-  email       String   @unique
-  displayName String   @map("display_name")
-  role        String
-  status      String   @default("pending_review")
-  mfaSecret   String?  @map("mfa_secret")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @map("updated_at")
+enum AccountType {
+  CAPITAL_HUMANO
+  PERSONAL_CATT
+  PROFESOR
+  DIRECTOR_EXTERNO
+  ALUMNO
 
+  @@map("account_type")
+}
+
+model Account {
+  id          String      @id @default(uuid(7)) @db.Uuid
+  username    String      @unique @db.Citext
+  email       String      @db.Citext // Not unique because of the possibility of having multiple accounts with the same email but different account types (e.g., a profesor is also an capital humano)
+  accountType AccountType @map("account_type") // One inmutable account type per account
+
+  accountInfo AccountInfo?
+
+  credential Credential?
+
+  // Account audit information
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Account profile relations
+  profesorProfile        ProfesorProfile?
+  directorExternoProfile DirectorExternoProfile?
+  alumnoProfile          AlumnoProfile?
+
+  @@unique([id, accountType])
+  @@unique([email, accountType])
   @@map("accounts")
+}
+
+model AccountInfo {
+  accountId String @id @map("account_id") @db.Uuid
+
+  avatarUrl        String? @map("avatar_url")
+  firstName        String  @map("first_name")
+  paternalLastName String  @map("paternal_last_name")
+  maternalLastName String? @map("maternal_last_name")
+  phoneNumber      String? @map("phone_number")
+  socialLinks      Json?   @map("social_links")
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+}
+
+model ProfesorProfile {
+  accountId      String      @id @map("account_id") @db.Uuid
+  accountType    AccountType @default(PROFESOR) @map("account_type")
+  numeroEmpleado String      @unique @map("numero_empleado")
+  academias      Academia[]
+
+  account Account @relation(fields: [accountId, accountType], references: [id, accountType], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([accountId, accountType])
+  @@map("profesor_profiles")
+}
+
+model DirectorExternoProfile {
+  accountId   String      @id @map("account_id") @db.Uuid
+  accountType AccountType @default(DIRECTOR_EXTERNO) @map("account_type")
+
+  cvUrl                String @map("cv_url")
+  cedulaProfesionalUrl String @map("cedula_profesional_url")
+
+  account Account @relation(fields: [accountId, accountType], references: [id, accountType], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([accountId, accountType])
+  @@map("director_externo_profiles")
+}
+
+model AlumnoProfile {
+  accountId    String      @id @map("account_id") @db.Uuid
+  accountType  AccountType @default(ALUMNO) @map("account_type")
+  numeroBoleta String      @unique @map("numero_boleta")
+
+  protocoloId String?    @map("protocolo_id") @db.Uuid
+  protocolo   Protocolo? @relation(fields: [protocoloId], references: [id])
+
+  account Account @relation(fields: [accountId, accountType], references: [id, accountType], onDelete: Cascade, onUpdate: Restrict)
+
+  @@unique([accountId, accountType])
+  @@index([protocoloId])
+  @@map("alumno_profiles")
+}
+
+model Academia {
+  id         String            @id @default(uuid(7)) @db.Uuid
+  nombre     String            @unique
+  profesores ProfesorProfile[]
+
+  @@map("academias")
+}
+
+model Protocolo {
+  id String @id @default(uuid(7)) @db.Uuid
+
+  title             String
+  noTrabajoTerminal String @unique @map("no_trabajo_terminal")
+  summary           String
+
+  fileUrl String @map("file_url")
+
+  integrantes AlumnoProfile[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("protocolos")
+}
+
+model Credential {
+  accountId           String    @id @map("account_id") @db.Uuid
+  passwordHash        String    @map("password_hash")
+  passwordChangedAt   DateTime  @default(now()) @map("password_changed_at") @db.Timestamptz(6)
+  mustChangePassword  Boolean   @default(false) @map("must_change_password")
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until") @db.Timestamptz(6)
+  lastLoginAt         DateTime? @map("last_login_at") @db.Timestamptz(6)
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("credentials")
 }
 
 model AuditLog {
