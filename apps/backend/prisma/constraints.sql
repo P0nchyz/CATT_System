@@ -10,57 +10,70 @@
 -- ============================================================================
 
 -- 1. Pin each profile's account_type to the correct value
-ALTER TABLE capital_humano_profiles   ADD CONSTRAINT check_type CHECK (account_type = 'CAPITAL_HUMANO');
-ALTER TABLE personal_CATT_profiles    ADD CONSTRAINT check_type CHECK (account_type = 'PERSONAL_CATT');
-ALTER TABLE profesor_profiles         ADD CONSTRAINT check_type CHECK (account_type = 'PROFESOR');
-ALTER TABLE director_externo_profiles ADD CONSTRAINT check_type CHECK (account_type = 'DIRECTOR_EXTERNO');
-ALTER TABLE alumno_profiles           ADD CONSTRAINT check_type CHECK (account_type = 'ALUMNO');
+ALTER TABLE capital_humano_profiles   ADD CONSTRAINT capital_humano_profile_type_check   CHECK (account_type = 'CAPITAL_HUMANO');
+ALTER TABLE personal_catt_profiles    ADD CONSTRAINT personal_catt_profile_type_check    CHECK (account_type = 'PERSONAL_CATT');
+ALTER TABLE profesor_profiles         ADD CONSTRAINT profesor_profile_type_check         CHECK (account_type = 'PROFESOR');
+ALTER TABLE director_externo_profiles ADD CONSTRAINT director_profile_externo_type_check CHECK (account_type = 'DIRECTOR_EXTERNO');
+ALTER TABLE alumno_profiles           ADD CONSTRAINT alumno_profile_type_check           CHECK (account_type = 'ALUMNO');
 
--- 2. Account type is immutable
-CREATE OR REPLACE FUNCTION prevent_account_type_update() RETURNS TRIGGER
+
+CREATE FUNCTION assert_account_has_profile() RETURNS trigger
 LANGUAGE plpgsql AS $$
-BEGIN
-  IF NEW.type IS DISTINCT FROM OLD.type THEN
-    RAISE EXCEPTION 'accounts.type is immutable (account %)', OLD.id
-      USING ERRCODE = 'check_violation';
-  END IF;
-  RETURN NEW;
-END $$;
-
-CREATE TRIGGER accounts_type_immutable
-  BEFORE UPDATE OF type ON accounts
-  FOR EACH ROW EXECUTE FUNCTION prevent_account_type_update();
-
--- 3. Every account must have its profile
-CREATE OR REPLACE FUNCTION account_has_profile(acc_id uuid, acc_type account_type)
-RETURNS BOOLEAN AS $$
-  SELECT CASE acc_type
-    WHEN 'CAPITAL_HUMANO'   THEN EXISTS (SELECT 1 FROM capital_humano_profiles   WHERE account_id = acc_id)
-    WHEN 'PERSONAL_CATT'    THEN EXISTS (SELECT 1 FROM personal_CATT_profiles    WHERE account_id = acc_id)
-    WHEN 'PROFESOR'         THEN EXISTS (SELECT 1 FROM profesor_profiles         WHERE account_id = acc_id)
-    WHEN 'DIRECTOR_EXTERNO' THEN EXISTS (SELECT 1 FROM director_externo_profiles WHERE account_id = acc_id)
-    WHEN 'ALUMNO'           THEN EXISTS (SELECT 1 FROM alumno_profiles           WHERE account_id = acc_id)
-    ELSE false
-  END;
-$$ LANGUAGE sql STABLE;
-
-CREATE OR REPLACE FUNCTION assert_account_profile() RETURNS TRIGGER AS $$
 DECLARE
-  acc accounts%ROWTYPE;
+  acc_id   uuid;
+  acc_role account_role;
+  found_it boolean;
 BEGIN
-  SELECT * INTO acc FROM accounts
-    WHERE id = CASE WHEN TG_TABLE_NAME = 'accounts' THEN NEW.id ELSE OLD.id END;
-  IF FOUND AND NOT account_has_profile(acc.id, acc.type) THEN
-    RAISE EXCEPTION 'account % (type %) has no matching profile', acc.id, acc.type
-      USING ERRCODE = 'check_violation';
+  IF TG_TABLE_NAME = 'accounts' THEN
+    acc_id := NEW.id;
+  ELSE
+    acc_id := OLD.account_id;
+  END IF;
+
+  SELECT a.type INTO acc_type FROM account a WHERE a.id = acc_id;
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+
+  EXECUTE format('SELECT EXISTS (SELECT 1 FROM %I WHERE account_id = $1)', lower(acc_role::text) || '_profiles')
+    INTO found_it USING acc_id;
+
+  IF NOT found_it THEN
+    RAISE EXCEPTION 'account % has type % but no matching profile', acc_id, acc_role
+      USING ERRCODE = 'integrity_constraint_violation';
   END IF;
   RETURN NULL;
-END $$ LANGUAGE plpgsql;
+END $$;
 
-CREATE CONSTRAINT TRIGGER accounts_require_profile_trigger
-  AFTER INSERT, UPDATE ON accounts DEFERRABLE INITIALLY DEFERRED
-  FOR EACH ROW EXECUTE FUNCTION assert_account_profile();
+CREATE CONSTRAINT TRIGGER account_has_profile
+  AFTER INSERT OR UPDATE OF role ON account
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION assert_account_has_profile();
 
+CREATE CONSTRAINT TRIGGER student_profile_keeps_account_valid
+  AFTER DELETE ON student_profiles
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION assert_account_has_profile();
+
+CREATE CONSTRAINT TRIGGER student_profile_keeps_account_valid
+  AFTER DELETE ON student_profiles
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION assert_account_has_profile();
+
+CREATE CONSTRAINT TRIGGER student_profile_keeps_account_valid
+  AFTER DELETE ON student_profiles
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION assert_account_has_profile();
+
+CREATE CONSTRAINT TRIGGER student_profile_keeps_account_valid
+  AFTER DELETE ON student_profiles
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION assert_account_has_profile();
+
+CREATE CONSTRAINT TRIGGER student_profile_keeps_account_valid
+  AFTER DELETE ON student_profiles
+  DEFERRABLE INITIALLY DEFERRED
+  FOR EACH ROW EXECUTE FUNCTION assert_account_has_profile();
 -- Block deleting a profile if the account still exists
 CREATE CONSTRAINT TRIGGER profile_required_trigger AFTER DELETE ON capital_humano_profiles   DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION assert_account_profile();
 CREATE CONSTRAINT TRIGGER profile_required_trigger AFTER DELETE ON personal_catt_profiles    DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION assert_account_profile();
